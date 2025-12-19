@@ -614,6 +614,18 @@ class MenuFetcher:
                 
                 message += f"*🍴 중식{(' ' + time_range) if time_range else ''}*\n"
                 
+                # 우선순위 식당 및 가격 정의
+                priority_restaurants = [
+                    ('303관 B1', '5,500'),
+                    ('310관 B4', '4,000'),
+                    ('310관 B4', '5,500'),
+                    ('308관', '5,500')
+                ]
+                
+                # 메뉴를 우선순위와 일반으로 분리
+                priority_items = []
+                regular_items = []
+                
                 for restaurant_name, courses in menu_data['lunch'].items():
                     if not courses:
                         continue
@@ -628,10 +640,25 @@ class MenuFetcher:
                         course_name = clean_course_name(course.get('course', ''))
                         price_str = course.get('price', '').replace(' 원', '원')
                         menu_text = " · ".join(menu_items)
-                        
-                        # 코스명이 있으면 앞에 추가
                         course_prefix = f"{course_name} " if course_name else ""
-                        message += f"- {simple_name} ({price_str}원) : {course_prefix}{menu_text}\n"
+                        menu_line = f"- {simple_name} ({price_str}원) : {course_prefix}{menu_text}\n"
+                        
+                        # 우선순위 확인
+                        is_priority = False
+                        for priority_name, priority_price in priority_restaurants:
+                            if simple_name == priority_name and price_str == priority_price:
+                                priority_items.append(menu_line)
+                                is_priority = True
+                                break
+                        
+                        if not is_priority:
+                            regular_items.append(menu_line)
+                
+                # 우선순위 메뉴 먼저 출력, 그 다음 일반 메뉴
+                for item in priority_items:
+                    message += item
+                for item in regular_items:
+                    message += item
                 
                 if not lunch_found:
                     message += "- (메뉴 없음)\n"
