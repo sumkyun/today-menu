@@ -501,7 +501,7 @@ class MenuFetcher:
     def format_menu_message(self, menu_data: Dict[str, any]) -> str:
         """
         메뉴 데이터를 Slack 메시지 형식으로 포맷팅합니다.
-        식당별로 구조화된 메뉴를 보기 좋게 표시합니다.
+        간결하고 읽기 쉬운 형식으로 표시합니다.
         
         Args:
             menu_data: 메뉴 정보 딕셔너리
@@ -511,80 +511,139 @@ class MenuFetcher:
         """
         date = menu_data['date']
         date_obj = datetime.strptime(date, "%Y-%m-%d")
-        date_formatted = date_obj.strftime("%Y년 %m월 %d일")
-        weekday_kr = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+        weekday_kr = ['월', '화', '수', '목', '금', '토', '일']
         weekday = weekday_kr[date_obj.weekday()]
+        month_day = date_obj.strftime("%m/%d")
         
-        message = f"*{date_formatted} ({weekday}) 급식 메뉴*\n\n"
+        message = f"📅 {month_day}({weekday}) 오늘의 급식\n\n"
         
-        # 식당별 메뉴 포맷팅 함수
-        def format_restaurant_menus(meal_type: str, meal_icon: str, restaurants: Dict):
-            """식당별 메뉴를 포맷팅"""
-            if not restaurants:
-                return ""
-            
-            result = f"*{meal_icon} {meal_type}*\n"
-            
-            for restaurant_name, courses in restaurants.items():
-                result += f"\n*🏪 {restaurant_name}*\n"
-                
-                for course in courses:
-                    # 코스 정보 (시간, 코스명, 가격)
-                    course_header = []
-                    if course.get('time'):
-                        course_header.append(course['time'])
-                    if course.get('course'):
-                        course_header.append(course['course'])
-                    if course.get('price'):
-                        course_header.append(course['price'])
-                    
-                    if course_header:
-                        result += f"  _{' | '.join(course_header)}_\n"
-                    
-                    # 메뉴 항목 (한 줄에 여러 개 표시)
-                    if course.get('menu'):
-                        menu_text = " • ".join(course['menu'])
-                        result += f"  {menu_text}\n"
-                
-                result += "\n"
-            
-            return result
+        # 식당 이름을 간단하게 변환하는 함수
+        def simplify_restaurant_name(name: str) -> str:
+            """식당 이름을 간단하게 변환"""
+            # 308관, 309관, 310관, 303관 등 추출
+            if '308관' in name or '블루미르308관' in name:
+                return '308관'
+            elif '309관' in name or '블루미르309관' in name:
+                return '309관'
+            elif '310관' in name or 'B4층' in name:
+                return '310관 B4'
+            elif '303관' in name or 'B1층' in name:
+                return '303관 B1'
+            elif '102관' in name or 'University Club' in name:
+                return '102관'
+            return name
         
-        # 조식
+        # 시간 범위 추출 함수
+        def get_time_range(courses: List) -> str:
+            """코스들에서 시간 범위 추출"""
+            times = []
+            for course in courses:
+                if course.get('time'):
+                    time_str = course['time']
+                    # "11:00~13:30" 형식에서 시작 시간만 추출
+                    if '~' in time_str:
+                        start_time = time_str.split('~')[0]
+                        times.append(start_time)
+            if times:
+                # 가장 이른 시간과 늦은 시간 찾기
+                sorted_times = sorted(set(times))
+                if len(sorted_times) == 1:
+                    return sorted_times[0]
+                return f"{sorted_times[0]}~{sorted_times[-1]}"
+            return ""
+        
+        # 조식 포맷팅
         if menu_data.get('breakfast'):
             if isinstance(menu_data['breakfast'], dict):
-                # 식당별 구조화된 데이터
-                message += format_restaurant_menus("조식", "🌅", menu_data['breakfast'])
-            else:
-                # 기존 형식 (리스트) - 식당 이름 없이 표시
-                message += "*🌅 조식*\n"
-                message += "*🏪 본관 식당*\n"
-                menu_text = " • ".join(menu_data['breakfast'])
-                message += f"  {menu_text}\n\n"
+                message += "🌅 조식\n"
+                for restaurant_name, courses in menu_data['breakfast'].items():
+                    if not courses:
+                        continue
+                    course = courses[0]  # 첫 번째 코스만 표시
+                    simple_name = simplify_restaurant_name(restaurant_name)
+                    time_str = course.get('time', '')
+                    price_str = course.get('price', '').replace(' 원', '원')
+                    menu_items = course.get('menu', [])
+                    menu_text = " · ".join(menu_items[:3])  # 최대 3개만 표시
+                    message += f"- {simple_name} | {time_str} | {price_str}\n  {menu_text}\n"
+                message += "\n"
         
-        # 중식
+        # 중식 포맷팅
         if menu_data.get('lunch'):
             if isinstance(menu_data['lunch'], dict):
-                # 식당별 구조화된 데이터
-                message += format_restaurant_menus("중식", "🍽️", menu_data['lunch'])
-            else:
-                # 기존 형식 (리스트) - 식당 이름 없이 표시
-                message += "*🍽️ 중식*\n"
-                message += "*🏪 본관 식당*\n"
-                menu_text = " • ".join(menu_data['lunch'])
-                message += f"  {menu_text}\n\n"
+                # 시간 범위 추출
+                all_times = []
+                for courses in menu_data['lunch'].values():
+                    for course in courses:
+                        if course.get('time'):
+                            all_times.append(course['time'])
+                
+                time_range = ""
+                if all_times:
+                    # 가장 이른 시간과 늦은 시간 찾기
+                    start_times = []
+                    end_times = []
+                    for time_str in all_times:
+                        if '~' in time_str:
+                            parts = time_str.split('~')
+                            start_times.append(parts[0])
+                            end_times.append(parts[1])
+                    if start_times and end_times:
+                        time_range = f" ({min(start_times)}~{max(end_times)})"
+                
+                message += f"🍴 중식{time_range}\n"
+                
+                for restaurant_name, courses in menu_data['lunch'].items():
+                    if not courses:
+                        continue
+                    simple_name = simplify_restaurant_name(restaurant_name)
+                    
+                    # 메뉴들을 간단하게 정리
+                    menu_list = []
+                    for course in courses:
+                        course_name = course.get('course', '')
+                        menu_items = course.get('menu', [])
+                        
+                        # 코스명이 있으면 코스명으로, 없으면 메뉴 항목으로
+                        if course_name and course_name not in ['중식', '중식(한식)', '중식(특식)']:
+                            # 코스명에서 괄호 제거
+                            clean_course = course_name.replace('중식(', '').replace(')', '')
+                            menu_list.append(clean_course)
+                        elif menu_items:
+                            # 메뉴 항목들을 간단하게 (최대 2-3개)
+                            if len(menu_items) <= 3:
+                                menu_list.append(" · ".join(menu_items))
+                            else:
+                                menu_list.append(" · ".join(menu_items[:2]) + " · ...")
+                    
+                    if menu_list:
+                        menu_text = " / ".join(menu_list[:3])  # 최대 3개 코스만
+                        message += f"- {simple_name} | {menu_text}\n"
+                message += "\n"
         
-        # 석식
+        # 석식 포맷팅
         if menu_data.get('dinner'):
             if isinstance(menu_data['dinner'], dict):
-                # 식당별 구조화된 데이터
-                message += format_restaurant_menus("석식", "🌙", menu_data['dinner'])
-            else:
-                # 기존 형식 (리스트) - 식당 이름 없이 표시
-                message += "*🌙 석식*\n"
-                message += "*🏪 본관 식당*\n"
-                menu_text = " • ".join(menu_data['dinner'])
-                message += f"  {menu_text}\n"
+                message += "🌙 석식\n"
+                for restaurant_name, courses in menu_data['dinner'].items():
+                    if not courses:
+                        continue
+                    simple_name = simplify_restaurant_name(restaurant_name)
+                    
+                    # 메뉴들을 간단하게 정리
+                    menu_list = []
+                    for course in courses:
+                        menu_items = course.get('menu', [])
+                        if menu_items:
+                            # 메뉴 항목들을 간단하게 (최대 2-3개)
+                            if len(menu_items) <= 3:
+                                menu_list.append(" · ".join(menu_items))
+                            else:
+                                menu_list.append(" · ".join(menu_items[:2]) + " · ...")
+                    
+                    if menu_list:
+                        menu_text = " / ".join(menu_list[:2])  # 최대 2개 코스만
+                        message += f"- {simple_name} | {menu_text}\n"
         
         return message
 
