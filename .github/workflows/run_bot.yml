@@ -25,6 +25,7 @@ jobs:
 
     - name: 라이브러리 설치
       run: |
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
 
     - name: 스크립트 실행
@@ -32,5 +33,6 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         SCHOOL_MENU_WEBSITE_URL: ${{ secrets.SCHOOL_MENU_WEBSITE_URL }}
         SCHOOL_CODE: ${{ secrets.SCHOOL_CODE }}
+        SELENIUM_HEADLESS: "true"
       run: python main.py
 
