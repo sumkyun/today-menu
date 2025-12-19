@@ -1,0 +1,36 @@
+name: 학식 알림 봇
+
+on:
+  schedule:
+    # UTC 기준 시간 (한국 시간 - 9시간)
+    # 예: 한국 시간 오전 11시에 실행하려면 UTC 02:00 설정
+    - cron: '0 2 * * 1-5' # 월~금(1-5) 오전 11시(KST) 실행
+  workflow_dispatch: # 수동 실행 버튼 활성화
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 저장소 체크아웃
+      uses: actions/checkout@v3
+
+    - name: 파이썬 설정
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Chrome 설치
+      uses: browser-actions/setup-chrome@latest
+
+    - name: 라이브러리 설치
+      run: |
+        pip install -r requirements.txt
+
+    - name: 스크립트 실행
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SCHOOL_MENU_WEBSITE_URL: ${{ secrets.SCHOOL_MENU_WEBSITE_URL }}
+        SCHOOL_CODE: ${{ secrets.SCHOOL_CODE }}
+      run: python main.py
+
