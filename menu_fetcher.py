@@ -587,7 +587,7 @@ class MenuFetcher:
                 
                 if not breakfast_found:
                     message += "- (메뉴 없음)\n"
-                message += "\n"
+                message += "\n----------------------------------------\n\n"
         
         # 중식 포맷팅
         lunch_found = False
@@ -662,7 +662,7 @@ class MenuFetcher:
                 
                 if not lunch_found:
                     message += "- (메뉴 없음)\n"
-                message += "\n"
+                message += "\n----------------------------------------\n\n"
         
         # 석식 포맷팅
         dinner_found = False
