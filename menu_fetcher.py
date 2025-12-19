@@ -615,12 +615,16 @@ class MenuFetcher:
                 message += f"*🍴 중식{(' ' + time_range) if time_range else ''}*\n"
                 
                 # 우선순위 식당 및 가격 정의
+                # 303관 B1 (5,500원)을 가장 앞으로
                 priority_restaurants = [
                     ('303관 B1', '5,500'),
                     ('310관 B4', '4,000'),
                     ('310관 B4', '5,500'),
                     ('308관', '5,500')
                 ]
+                
+                # 303관 B1 (5,500원) 메뉴를 별도로 분리하여 가장 앞에 배치
+                top_priority_items = []
                 
                 # 메뉴를 우선순위와 일반으로 분리
                 priority_items = []
@@ -701,7 +705,7 @@ class MenuFetcher:
                         
                         dinner_found = True
                         course_name = clean_course_name(course.get('course', ''))
-                        price_str = course.get('price', '').replace(' 원', '원')
+                        price_str = course.get('price', '').replace(' 원', '').replace('원', '').strip()
                         menu_text = " · ".join(menu_items)
                         
                         # 코스명이 있으면 앞에 추가
