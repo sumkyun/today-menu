@@ -581,7 +581,7 @@ class MenuFetcher:
                         
                         breakfast_found = True
                         simple_name = simplify_restaurant_name(restaurant_name)
-                        price_str = course.get('price', '').replace(' 원', '원').replace(',', '')
+                        price_str = course.get('price', '').replace(' 원', '원')
                         menu_text = " · ".join(menu_items)
                         message += f"- {simple_name} ({price_str}원) : {menu_text}\n"
                 
@@ -626,7 +626,7 @@ class MenuFetcher:
                         
                         lunch_found = True
                         course_name = clean_course_name(course.get('course', ''))
-                        price_str = course.get('price', '').replace(' 원', '원').replace(',', '')
+                        price_str = course.get('price', '').replace(' 원', '원')
                         menu_text = " · ".join(menu_items)
                         
                         # 코스명이 있으면 앞에 추가
@@ -674,7 +674,7 @@ class MenuFetcher:
                         
                         dinner_found = True
                         course_name = clean_course_name(course.get('course', ''))
-                        price_str = course.get('price', '').replace(' 원', '원').replace(',', '')
+                        price_str = course.get('price', '').replace(' 원', '원')
                         menu_text = " · ".join(menu_items)
                         
                         # 코스명이 있으면 앞에 추가
