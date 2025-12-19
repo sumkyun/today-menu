@@ -581,9 +581,9 @@ class MenuFetcher:
                         
                         breakfast_found = True
                         simple_name = simplify_restaurant_name(restaurant_name)
-                        price_str = course.get('price', '').replace(' 원', '원')
+                        price_str = course.get('price', '').replace(' 원', '원').replace(',', '')
                         menu_text = " · ".join(menu_items)
-                        message += f"- *{simple_name} | {price_str} |* {menu_text}\n"
+                        message += f"- {simple_name} ({price_str}원) : {menu_text}\n"
                 
                 if not breakfast_found:
                     message += "- (메뉴 없음)\n"
@@ -626,12 +626,12 @@ class MenuFetcher:
                         
                         lunch_found = True
                         course_name = clean_course_name(course.get('course', ''))
-                        price_str = course.get('price', '').replace(' 원', '원')
+                        price_str = course.get('price', '').replace(' 원', '원').replace(',', '')
                         menu_text = " · ".join(menu_items)
                         
                         # 코스명이 있으면 앞에 추가
                         course_prefix = f"{course_name} " if course_name else ""
-                        message += f"- *{simple_name} | {price_str} |* {course_prefix}{menu_text}\n"
+                        message += f"- {simple_name} ({price_str}원) : {course_prefix}{menu_text}\n"
                 
                 if not lunch_found:
                     message += "- (메뉴 없음)\n"
@@ -674,12 +674,12 @@ class MenuFetcher:
                         
                         dinner_found = True
                         course_name = clean_course_name(course.get('course', ''))
-                        price_str = course.get('price', '').replace(' 원', '원')
+                        price_str = course.get('price', '').replace(' 원', '원').replace(',', '')
                         menu_text = " · ".join(menu_items)
                         
                         # 코스명이 있으면 앞에 추가
                         course_prefix = f"{course_name} " if course_name else ""
-                        message += f"- *{simple_name} | {price_str} |* {course_prefix}{menu_text}\n"
+                        message += f"- {simple_name} ({price_str}원) : {course_prefix}{menu_text}\n"
                 
                 if not dinner_found:
                     message += "- (메뉴 없음)\n"
