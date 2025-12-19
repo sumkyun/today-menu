@@ -4,6 +4,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, Optional, List
 import time
+import platform
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -114,34 +115,23 @@ class MenuFetcher:
             chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
             
             # 2. ChromeDriver 자동 설치 및 설정
-            # webdriver-manager가 Chrome 버전을 자동으로 감지하고 맞는 드라이버를 다운로드합니다
-            # 이 부분이 'Chrome not installed' 오류를 해결합니다!
-            print("🔍 ChromeDriver 자동 설치 중...")
+            # 운영체제에 따라 다르게 처리:
+            # - Linux (GitHub Actions): 이미 설치된 Chrome 사용 (webdriver-manager 사용 안 함)
+            # - Windows/Mac (로컬): webdriver-manager로 자동 설치
+            print("🔍 ChromeDriver 설정 중...")
             try:
-                import os
-                driver_path = ChromeDriverManager().install()
-                
-                # Linux에서 실제 chromedriver 실행 파일 찾기
-                # webdriver-manager가 때때로 잘못된 파일 경로를 반환할 수 있음
-                if not os.path.isfile(driver_path) or not driver_path.endswith('chromedriver'):
-                    # 부모 디렉토리에서 chromedriver 실행 파일 찾기
-                    parent_dir = os.path.dirname(driver_path)
-                    if os.path.isdir(parent_dir):
-                        for root, dirs, files in os.walk(parent_dir):
-                            for file in files:
-                                if file == 'chromedriver':
-                                    candidate_path = os.path.join(root, file)
-                                    if os.path.isfile(candidate_path):
-                                        driver_path = candidate_path
-                                        break
-                
-                # 실행 권한 부여 (Linux/Mac)
-                if os.path.exists(driver_path) and os.path.isfile(driver_path):
-                    os.chmod(driver_path, 0o755)
-                
-                service = Service(driver_path)
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-                print("✅ ChromeDriver 설정 완료")
+                if platform.system() == "Linux":
+                    # 서버(GitHub Actions) 환경: 이미 설치된 Chrome을 사용
+                    # browser-actions/setup-chrome이 Chrome과 ChromeDriver를 미리 설치해줌
+                    print("   Linux 환경 감지: 설치된 Chrome 사용")
+                    driver = webdriver.Chrome(options=chrome_options)
+                    print("✅ ChromeDriver 설정 완료 (서버 환경)")
+                else:
+                    # 로컬 환경(Windows/Mac): webdriver-manager로 자동 설치
+                    print("   로컬 환경 감지: ChromeDriver 자동 설치 중...")
+                    service = Service(ChromeDriverManager().install())
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                    print("✅ ChromeDriver 설정 완료 (로컬 환경)")
             except Exception as e:
                 error_msg = f"❌ Chrome/ChromeDriver 설정 실패: {e}"
                 print(error_msg)
