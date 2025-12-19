@@ -533,138 +533,156 @@ class MenuFetcher:
                 return '102관'
             return name
         
-        # 시간 범위 추출 함수
-        def get_time_range(courses: List) -> str:
-            """코스들에서 시간 범위 추출"""
-            times = []
-            for course in courses:
-                if course.get('time'):
-                    time_str = course['time']
-                    # "11:00~13:30" 형식에서 시작 시간만 추출
-                    if '~' in time_str:
-                        start_time = time_str.split('~')[0]
-                        times.append(start_time)
-            if times:
-                # 가장 이른 시간과 늦은 시간 찾기
-                sorted_times = sorted(set(times))
-                if len(sorted_times) == 1:
-                    return sorted_times[0]
-                return f"{sorted_times[0]}~{sorted_times[-1]}"
-            return ""
+        # 코스명 정리 함수
+        def clean_course_name(course_name: str) -> str:
+            """코스명을 간단하게 정리"""
+            if not course_name:
+                return ""
+            # 괄호 제거 및 정리
+            course = course_name.replace('조식(', '').replace('중식(', '').replace('석식(', '').replace(')', '')
+            # 불필요한 단어 제거
+            if course in ['조식', '중식', '석식', '한식']:
+                return ""
+            return course
         
         # 조식 포맷팅
         breakfast_found = False
+        breakfast_times = []
         if menu_data.get('breakfast'):
             if isinstance(menu_data['breakfast'], dict):
-                message += "🌅 조식\n"
-                for restaurant_name, courses in menu_data['breakfast'].items():
-                    if not courses:
-                        continue
-                    course = courses[0]  # 첫 번째 코스만 표시
-                    menu_items = course.get('menu', [])
-                    if not menu_items:  # 메뉴가 비어있으면 스킵
-                        continue
-                    breakfast_found = True
-                    simple_name = simplify_restaurant_name(restaurant_name)
-                    time_str = course.get('time', '')
-                    price_str = course.get('price', '').replace(' 원', '원')
-                    menu_text = " · ".join(menu_items[:3])  # 최대 3개만 표시
-                    message += f"- {simple_name} | {time_str} | {price_str}\n  {menu_text}\n"
-                if not breakfast_found:
-                    message += "  (메뉴 없음)\n"
-                message += "\n"
-        
-        # 중식 포맷팅
-        lunch_found = False
-        if menu_data.get('lunch'):
-            if isinstance(menu_data['lunch'], dict):
                 # 시간 범위 추출
-                all_times = []
-                for courses in menu_data['lunch'].values():
+                for courses in menu_data['breakfast'].values():
                     for course in courses:
                         if course.get('time'):
-                            all_times.append(course['time'])
+                            breakfast_times.append(course['time'])
                 
                 time_range = ""
-                if all_times:
-                    # 가장 이른 시간과 늦은 시간 찾기
+                if breakfast_times:
                     start_times = []
                     end_times = []
-                    for time_str in all_times:
+                    for time_str in breakfast_times:
                         if '~' in time_str:
                             parts = time_str.split('~')
                             start_times.append(parts[0])
                             end_times.append(parts[1])
                     if start_times and end_times:
-                        time_range = f" ({min(start_times)}~{max(end_times)})"
+                        time_range = f"({min(start_times)}~{max(end_times)})"
                 
-                message += f"🍴 중식{time_range}\n"
+                message += f"**🌅 조식{(' ' + time_range) if time_range else ''}**\n"
+                
+                for restaurant_name, courses in menu_data['breakfast'].items():
+                    if not courses:
+                        continue
+                    
+                    for course in courses:
+                        menu_items = course.get('menu', [])
+                        if not menu_items:
+                            continue
+                        
+                        breakfast_found = True
+                        simple_name = simplify_restaurant_name(restaurant_name)
+                        price_str = course.get('price', '').replace(' 원', '원')
+                        menu_text = " · ".join(menu_items)
+                        message += f"- **{simple_name} | {price_str} |** {menu_text}\n"
+                
+                if not breakfast_found:
+                    message += "- (메뉴 없음)\n"
+                message += "\n"
+        
+        # 중식 포맷팅
+        lunch_found = False
+        lunch_times = []
+        if menu_data.get('lunch'):
+            if isinstance(menu_data['lunch'], dict):
+                # 시간 범위 추출
+                for courses in menu_data['lunch'].values():
+                    for course in courses:
+                        if course.get('time'):
+                            lunch_times.append(course['time'])
+                
+                time_range = ""
+                if lunch_times:
+                    start_times = []
+                    end_times = []
+                    for time_str in lunch_times:
+                        if '~' in time_str:
+                            parts = time_str.split('~')
+                            start_times.append(parts[0])
+                            end_times.append(parts[1])
+                    if start_times and end_times:
+                        time_range = f"({min(start_times)}~{max(end_times)})"
+                
+                message += f"**🍴 중식{(' ' + time_range) if time_range else ''}**\n"
                 
                 for restaurant_name, courses in menu_data['lunch'].items():
                     if not courses:
                         continue
                     simple_name = simplify_restaurant_name(restaurant_name)
                     
-                    # 메뉴들을 간단하게 정리
-                    menu_list = []
                     for course in courses:
-                        course_name = course.get('course', '')
                         menu_items = course.get('menu', [])
-                        
-                        # 메뉴가 비어있으면 스킵
                         if not menu_items:
                             continue
                         
                         lunch_found = True
-                        # 코스명이 있으면 코스명으로, 없으면 메뉴 항목으로
-                        if course_name and course_name not in ['중식', '중식(한식)', '중식(특식)']:
-                            # 코스명에서 괄호 제거
-                            clean_course = course_name.replace('중식(', '').replace(')', '')
-                            menu_list.append(clean_course)
-                        else:
-                            # 메뉴 항목들을 간단하게 (최대 2-3개)
-                            if len(menu_items) <= 3:
-                                menu_list.append(" · ".join(menu_items))
-                            else:
-                                menu_list.append(" · ".join(menu_items[:2]) + " · ...")
-                    
-                    if menu_list:
-                        menu_text = " / ".join(menu_list[:3])  # 최대 3개 코스만
-                        message += f"- {simple_name} | {menu_text}\n"
+                        course_name = clean_course_name(course.get('course', ''))
+                        price_str = course.get('price', '').replace(' 원', '원')
+                        menu_text = " · ".join(menu_items)
+                        
+                        # 코스명이 있으면 앞에 추가
+                        course_prefix = f"{course_name} " if course_name else ""
+                        message += f"- **{simple_name} | {price_str} |** {course_prefix}{menu_text}\n"
                 
                 if not lunch_found:
-                    message += "  (메뉴 없음)\n"
+                    message += "- (메뉴 없음)\n"
                 message += "\n"
         
         # 석식 포맷팅
         dinner_found = False
+        dinner_times = []
         if menu_data.get('dinner'):
             if isinstance(menu_data['dinner'], dict):
-                message += "🌙 석식\n"
+                # 시간 범위 추출
+                for courses in menu_data['dinner'].values():
+                    for course in courses:
+                        if course.get('time'):
+                            dinner_times.append(course['time'])
+                
+                time_range = ""
+                if dinner_times:
+                    start_times = []
+                    end_times = []
+                    for time_str in dinner_times:
+                        if '~' in time_str:
+                            parts = time_str.split('~')
+                            start_times.append(parts[0])
+                            end_times.append(parts[1])
+                    if start_times and end_times:
+                        time_range = f"({min(start_times)}~{max(end_times)})"
+                
+                message += f"**🌙 석식{(' ' + time_range) if time_range else ''}**\n"
+                
                 for restaurant_name, courses in menu_data['dinner'].items():
                     if not courses:
                         continue
                     simple_name = simplify_restaurant_name(restaurant_name)
                     
-                    # 메뉴들을 간단하게 정리
-                    menu_list = []
                     for course in courses:
                         menu_items = course.get('menu', [])
-                        if not menu_items:  # 메뉴가 비어있으면 스킵
+                        if not menu_items:
                             continue
+                        
                         dinner_found = True
-                        # 메뉴 항목들을 간단하게 (최대 2-3개)
-                        if len(menu_items) <= 3:
-                            menu_list.append(" · ".join(menu_items))
-                        else:
-                            menu_list.append(" · ".join(menu_items[:2]) + " · ...")
-                    
-                    if menu_list:
-                        menu_text = " / ".join(menu_list[:2])  # 최대 2개 코스만
-                        message += f"- {simple_name} | {menu_text}\n"
+                        course_name = clean_course_name(course.get('course', ''))
+                        price_str = course.get('price', '').replace(' 원', '원')
+                        menu_text = " · ".join(menu_items)
+                        
+                        # 코스명이 있으면 앞에 추가
+                        course_prefix = f"{course_name} " if course_name else ""
+                        message += f"- **{simple_name} | {price_str} |** {course_prefix}{menu_text}\n"
                 
                 if not dinner_found:
-                    message += "  (메뉴 없음)\n"
+                    message += "- (메뉴 없음)\n"
         
         # 모든 메뉴가 없으면 안내 메시지
         if not breakfast_found and not lunch_found and not dinner_found:
