@@ -553,6 +553,7 @@ class MenuFetcher:
             return ""
         
         # 조식 포맷팅
+        breakfast_found = False
         if menu_data.get('breakfast'):
             if isinstance(menu_data['breakfast'], dict):
                 message += "🌅 조식\n"
@@ -560,15 +561,21 @@ class MenuFetcher:
                     if not courses:
                         continue
                     course = courses[0]  # 첫 번째 코스만 표시
+                    menu_items = course.get('menu', [])
+                    if not menu_items:  # 메뉴가 비어있으면 스킵
+                        continue
+                    breakfast_found = True
                     simple_name = simplify_restaurant_name(restaurant_name)
                     time_str = course.get('time', '')
                     price_str = course.get('price', '').replace(' 원', '원')
-                    menu_items = course.get('menu', [])
                     menu_text = " · ".join(menu_items[:3])  # 최대 3개만 표시
                     message += f"- {simple_name} | {time_str} | {price_str}\n  {menu_text}\n"
+                if not breakfast_found:
+                    message += "  (메뉴 없음)\n"
                 message += "\n"
         
         # 중식 포맷팅
+        lunch_found = False
         if menu_data.get('lunch'):
             if isinstance(menu_data['lunch'], dict):
                 # 시간 범위 추출
@@ -604,12 +611,17 @@ class MenuFetcher:
                         course_name = course.get('course', '')
                         menu_items = course.get('menu', [])
                         
+                        # 메뉴가 비어있으면 스킵
+                        if not menu_items:
+                            continue
+                        
+                        lunch_found = True
                         # 코스명이 있으면 코스명으로, 없으면 메뉴 항목으로
                         if course_name and course_name not in ['중식', '중식(한식)', '중식(특식)']:
                             # 코스명에서 괄호 제거
                             clean_course = course_name.replace('중식(', '').replace(')', '')
                             menu_list.append(clean_course)
-                        elif menu_items:
+                        else:
                             # 메뉴 항목들을 간단하게 (최대 2-3개)
                             if len(menu_items) <= 3:
                                 menu_list.append(" · ".join(menu_items))
@@ -619,9 +631,13 @@ class MenuFetcher:
                     if menu_list:
                         menu_text = " / ".join(menu_list[:3])  # 최대 3개 코스만
                         message += f"- {simple_name} | {menu_text}\n"
+                
+                if not lunch_found:
+                    message += "  (메뉴 없음)\n"
                 message += "\n"
         
         # 석식 포맷팅
+        dinner_found = False
         if menu_data.get('dinner'):
             if isinstance(menu_data['dinner'], dict):
                 message += "🌙 석식\n"
@@ -634,16 +650,25 @@ class MenuFetcher:
                     menu_list = []
                     for course in courses:
                         menu_items = course.get('menu', [])
-                        if menu_items:
-                            # 메뉴 항목들을 간단하게 (최대 2-3개)
-                            if len(menu_items) <= 3:
-                                menu_list.append(" · ".join(menu_items))
-                            else:
-                                menu_list.append(" · ".join(menu_items[:2]) + " · ...")
+                        if not menu_items:  # 메뉴가 비어있으면 스킵
+                            continue
+                        dinner_found = True
+                        # 메뉴 항목들을 간단하게 (최대 2-3개)
+                        if len(menu_items) <= 3:
+                            menu_list.append(" · ".join(menu_items))
+                        else:
+                            menu_list.append(" · ".join(menu_items[:2]) + " · ...")
                     
                     if menu_list:
                         menu_text = " / ".join(menu_list[:2])  # 최대 2개 코스만
                         message += f"- {simple_name} | {menu_text}\n"
+                
+                if not dinner_found:
+                    message += "  (메뉴 없음)\n"
+        
+        # 모든 메뉴가 없으면 안내 메시지
+        if not breakfast_found and not lunch_found and not dinner_found:
+            message += "\n⚠️ 해당 날짜의 메뉴 정보가 없습니다."
         
         return message
 
