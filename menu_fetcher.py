@@ -568,7 +568,7 @@ class MenuFetcher:
                     if start_times and end_times:
                         time_range = f"({min(start_times)}~{max(end_times)})"
                 
-                message += f"**🌅 조식{(' ' + time_range) if time_range else ''}**\n"
+                message += f"*🌅 조식{(' ' + time_range) if time_range else ''}*\n"
                 
                 for restaurant_name, courses in menu_data['breakfast'].items():
                     if not courses:
@@ -583,7 +583,7 @@ class MenuFetcher:
                         simple_name = simplify_restaurant_name(restaurant_name)
                         price_str = course.get('price', '').replace(' 원', '원')
                         menu_text = " · ".join(menu_items)
-                        message += f"- **{simple_name} | {price_str} |** {menu_text}\n"
+                        message += f"- *{simple_name} | {price_str} |* {menu_text}\n"
                 
                 if not breakfast_found:
                     message += "- (메뉴 없음)\n"
@@ -612,7 +612,7 @@ class MenuFetcher:
                     if start_times and end_times:
                         time_range = f"({min(start_times)}~{max(end_times)})"
                 
-                message += f"**🍴 중식{(' ' + time_range) if time_range else ''}**\n"
+                message += f"*🍴 중식{(' ' + time_range) if time_range else ''}*\n"
                 
                 for restaurant_name, courses in menu_data['lunch'].items():
                     if not courses:
@@ -660,7 +660,7 @@ class MenuFetcher:
                     if start_times and end_times:
                         time_range = f"({min(start_times)}~{max(end_times)})"
                 
-                message += f"**🌙 석식{(' ' + time_range) if time_range else ''}**\n"
+                message += f"*🌙 석식{(' ' + time_range) if time_range else ''}*\n"
                 
                 for restaurant_name, courses in menu_data['dinner'].items():
                     if not courses:
