@@ -118,7 +118,28 @@ class MenuFetcher:
             # 이 부분이 'Chrome not installed' 오류를 해결합니다!
             print("🔍 ChromeDriver 자동 설치 중...")
             try:
-                service = Service(ChromeDriverManager().install())
+                import os
+                driver_path = ChromeDriverManager().install()
+                
+                # Linux에서 실제 chromedriver 실행 파일 찾기
+                # webdriver-manager가 때때로 잘못된 파일 경로를 반환할 수 있음
+                if not os.path.isfile(driver_path) or not driver_path.endswith('chromedriver'):
+                    # 부모 디렉토리에서 chromedriver 실행 파일 찾기
+                    parent_dir = os.path.dirname(driver_path)
+                    if os.path.isdir(parent_dir):
+                        for root, dirs, files in os.walk(parent_dir):
+                            for file in files:
+                                if file == 'chromedriver':
+                                    candidate_path = os.path.join(root, file)
+                                    if os.path.isfile(candidate_path):
+                                        driver_path = candidate_path
+                                        break
+                
+                # 실행 권한 부여 (Linux/Mac)
+                if os.path.exists(driver_path) and os.path.isfile(driver_path):
+                    os.chmod(driver_path, 0o755)
+                
+                service = Service(driver_path)
                 driver = webdriver.Chrome(service=service, options=chrome_options)
                 print("✅ ChromeDriver 설정 완료")
             except Exception as e:
