@@ -631,7 +631,7 @@ class MenuFetcher:
                         
                         # 코스명이 있으면 앞에 추가
                         course_prefix = f"{course_name} " if course_name else ""
-                        message += f"- **{simple_name} | {price_str} |** {course_prefix}{menu_text}\n"
+                        message += f"- *{simple_name} | {price_str} |* {course_prefix}{menu_text}\n"
                 
                 if not lunch_found:
                     message += "- (메뉴 없음)\n"
@@ -679,7 +679,7 @@ class MenuFetcher:
                         
                         # 코스명이 있으면 앞에 추가
                         course_prefix = f"{course_name} " if course_name else ""
-                        message += f"- **{simple_name} | {price_str} |** {course_prefix}{menu_text}\n"
+                        message += f"- *{simple_name} | {price_str} |* {course_prefix}{menu_text}\n"
                 
                 if not dinner_found:
                     message += "- (메뉴 없음)\n"
