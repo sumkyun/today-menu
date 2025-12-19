@@ -647,18 +647,18 @@ class MenuFetcher:
                         course_prefix = f"{course_name} " if course_name else ""
                         menu_line = f"- {simple_name} ({price_str}원) : {course_prefix}{menu_text}\n"
                         
-                        # 우선순위 확인
-                        is_priority = False
-                        for priority_name, priority_price in priority_restaurants:
-                            if simple_name == priority_name and price_str == priority_price:
-                                priority_items.append(menu_line)
-                                is_priority = True
-                                break
-                        
-                        if not is_priority:
+                        # 303관 B1 (5,500원)을 가장 앞으로
+                        if simple_name == '303관 B1' and price_str == '5,500':
+                            top_priority_items.append(menu_line)
+                        # 나머지 우선순위 확인
+                        elif (simple_name, price_str) in priority_restaurants:
+                            priority_items.append(menu_line)
+                        else:
                             regular_items.append(menu_line)
                 
-                # 우선순위 메뉴 먼저 출력, 그 다음 일반 메뉴
+                # 출력 순서: 303관 B1 (5,500원) -> 나머지 우선순위 -> 일반 메뉴
+                for item in top_priority_items:
+                    message += item
                 for item in priority_items:
                     message += item
                 for item in regular_items:
