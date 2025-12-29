@@ -29,6 +29,6 @@ else:
 
 # Validate required tokens
 # 검증은 각 모듈에서 필요할 때 수행하도록 변경
-# (app.py는 SLACK_BOT_TOKEN 필요, main.py는 SLACK_WEBHOOK_URL 필요)
+# (main.py는 SLACK_WEBHOOK_URL 필요)
 # import 시점에는 검증하지 않음
 
