@@ -20,11 +20,8 @@ SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
 # 서버(GitHub Actions)에 올릴 때는 "true"로 설정하거나 비워두세요
 SELENIUM_HEADLESS = os.getenv("SELENIUM_HEADLESS", "true").lower() == "true"
 
-# Validate required tokens (only for bot mode, not for webhook mode)
-# These are optional if only using webhook mode
-if not SLACK_BOT_TOKEN and not SLACK_WEBHOOK_URL:
-    raise ValueError("Either SLACK_BOT_TOKEN or SLACK_WEBHOOK_URL environment variable is required")
-if not SLACK_APP_TOKEN and not SLACK_WEBHOOK_URL:
-    # APP_TOKEN is only needed for Socket Mode (bot mode)
-    pass
+# Validate required tokens
+# 검증은 각 모듈에서 필요할 때 수행하도록 변경
+# (app.py는 SLACK_BOT_TOKEN 필요, main.py는 SLACK_WEBHOOK_URL 필요)
+# import 시점에는 검증하지 않음
 

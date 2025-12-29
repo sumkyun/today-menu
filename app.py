@@ -7,6 +7,12 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from menu_fetcher import MenuFetcher
 from config import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
 
+# 필수 토큰 검증
+if not SLACK_BOT_TOKEN:
+    raise ValueError("SLACK_BOT_TOKEN environment variable is required for bot mode")
+if not SLACK_APP_TOKEN:
+    raise ValueError("SLACK_APP_TOKEN environment variable is required for bot mode")
+
 # Slack 앱 초기화
 app = App(token=SLACK_BOT_TOKEN)
 
