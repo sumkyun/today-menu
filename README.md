@@ -8,6 +8,8 @@ Slack에 매일 자동으로 학교 급식 메뉴를 전송하는 봇입니다.
 - 매일 자동으로 Slack에 메뉴 전송
 - GitHub Actions를 통한 무료 자동 실행
 
+---
+
 ## 설치 방법
 
 ### 1. 저장소 클론 및 의존성 설치
@@ -27,20 +29,55 @@ pip install -r requirements.txt
 6. 메시지를 받을 채널 선택
 7. 생성된 Webhook URL 복사 (예: `https://hooks.slack.com/services/XXXX/YYYY/ZZZZ`)
 
-### 3. 환경 변수 설정
+---
+
+## 환경 변수 설정
+
+### .env 파일 설정 (로컬 개발용)
 
 프로젝트 루트에 `.env` 파일을 생성하고 다음 내용을 입력:
 
 ```env
-# Webhook 모드용 (자동 알림)
+# 필수
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXXX/YYYY/ZZZZ
-
-# 학교 메뉴 설정
 SCHOOL_MENU_WEBSITE_URL=https://mportal2.cau.ac.kr/main.do
+
+# 선택사항
+SCHOOL_CODE=
+SCHOOL_MENU_API_URL=
 ```
 
-- `SLACK_WEBHOOK_URL`: 위에서 복사한 Webhook URL
-- `SCHOOL_MENU_WEBSITE_URL`: 학교 홈페이지 급식 메뉴 페이지 URL
+#### 각 환경 변수 설명
+
+**1. SLACK_WEBHOOK_URL**
+- **용도**: 메뉴를 전송할 때 사용
+- **형식**: `https://hooks.slack.com/services/XXXX/YYYY/ZZZZ`
+- **가져오는 방법**:
+  1. Slack API 웹사이트 접속
+  2. 앱 선택 → **Incoming Webhooks**
+  3. **Webhook URL** 복사
+
+**2. SCHOOL_MENU_WEBSITE_URL**
+- **용도**: 크롤링할 학교 홈페이지 URL
+- **형식**: `https://학교도메인.ac.kr/경로`
+- **예시**: `https://mportal2.cau.ac.kr/main.do`
+
+**3. SCHOOL_CODE** (선택사항)
+- **용도**: 학교 API를 사용하는 경우
+- **형식**: 문자열
+- **기본값**: 비워두면 크롤링 모드 사용
+
+**4. SCHOOL_MENU_API_URL** (선택사항)
+- **용도**: 학교 API를 사용하는 경우
+- **형식**: `https://api.example.com/menu`
+- **기본값**: 비워두면 크롤링 모드 사용
+
+**5. SELENIUM_HEADLESS** (자동 설정)
+- **용도**: Selenium 브라우저를 헤드리스 모드로 실행할지 여부
+- **로컬 테스트**: 자동으로 `false` (브라우저 창 표시)
+- **서버/GitHub Actions**: 자동으로 `true` (브라우저 창 없이 실행)
+
+---
 
 ## 실행 방법
 
@@ -51,6 +88,74 @@ python main.py
 ```
 
 이 스크립트는 학교 홈페이지에서 메뉴를 크롤링하여 Slack Webhook으로 전송합니다.
+
+---
+
+## GitHub Actions로 자동 실행 설정
+
+매일 자동으로 메뉴를 전송하려면 GitHub Actions를 사용할 수 있습니다.
+
+### 1. GitHub 리포지토리 생성 및 코드 업로드
+
+1. GitHub에 새 리포지토리 생성
+2. 코드 업로드
+
+### 2. GitHub Secrets 설정
+
+리포지토리 **Settings** → **Secrets and variables** → **Actions**에서 다음 Secrets 추가:
+
+#### 필수 Secrets
+
+**Secret 1: SLACK_WEBHOOK_URL**
+```
+Name: SLACK_WEBHOOK_URL
+Secret: https://hooks.slack.com/services/XXXX/YYYY/ZZZZ
+```
+
+**Secret 2: SCHOOL_MENU_WEBSITE_URL**
+```
+Name: SCHOOL_MENU_WEBSITE_URL
+Secret: https://mportal2.cau.ac.kr/main.do
+```
+
+#### 선택사항 Secrets
+
+**Secret 3: SCHOOL_CODE** (선택사항)
+```
+Name: SCHOOL_CODE
+Secret: (학교 코드가 있다면 입력)
+```
+
+**Secret 4: SCHOOL_MENU_API_URL** (선택사항)
+```
+Name: SCHOOL_MENU_API_URL
+Secret: (API URL이 있다면 입력)
+```
+
+### 3. 실행 시간 조정
+
+`.github/workflows/run_bot.yml` 파일에서 실행 시간을 조정할 수 있습니다:
+
+```yaml
+- cron: '0 22 * * *' # 매일 오전 7시(KST) 실행 → 9시(KST) 알람 도착 예상
+```
+
+UTC 기준 시간이므로 한국 시간(KST)에서 9시간을 빼야 합니다.
+- 한국 시간 오전 7시 → UTC 22:00 (전날)
+
+### 4. 수동 실행
+
+GitHub Actions 탭에서 "학식 알림 봇" 워크플로우를 선택하고 "Run workflow" 버튼을 클릭하여 수동으로 실행할 수 있습니다.
+
+### 5. 확인 방법
+
+설정이 완료되면:
+1. GitHub Actions 탭으로 이동
+2. "학식 알림 봇" 워크플로우 선택
+3. "Run workflow" 버튼 클릭하여 수동 실행
+4. 성공하면 Slack에 메뉴가 전송됩니다!
+
+---
 
 ## 학교 홈페이지 크롤링 설정
 
@@ -81,38 +186,7 @@ python main.py
 
 ChromeDriver는 `webdriver-manager`가 자동으로 다운로드합니다.
 
-## GitHub Actions로 자동 실행 설정
-
-매일 자동으로 메뉴를 전송하려면 GitHub Actions를 사용할 수 있습니다.
-
-### 1. GitHub 리포지토리 생성 및 코드 업로드
-
-1. GitHub에 새 리포지토리 생성
-2. 코드 업로드
-
-### 2. GitHub Secrets 설정
-
-리포지토리 Settings → Secrets and variables → Actions에서 다음 Secrets 추가:
-
-- `SLACK_WEBHOOK_URL`: Slack Webhook URL (필수)
-- `SCHOOL_MENU_WEBSITE_URL`: 학교 홈페이지 급식 메뉴 URL (필수)
-- `SCHOOL_CODE`: 학교 코드 (선택사항)
-- `SCHOOL_MENU_API_URL`: 학교 API URL (선택사항)
-
-### 3. 실행 시간 조정
-
-`.github/workflows/run_bot.yml` 파일에서 실행 시간을 조정할 수 있습니다:
-
-```yaml
-- cron: '0 22 * * *' # 매일 오전 7시(KST) 실행 → 9시(KST) 알람 도착 예상
-```
-
-UTC 기준 시간이므로 한국 시간(KST)에서 9시간을 빼야 합니다.
-- 한국 시간 오전 7시 → UTC 22:00 (전날)
-
-### 4. 수동 실행
-
-GitHub Actions 탭에서 "학식 알림 봇" 워크플로우를 선택하고 "Run workflow" 버튼을 클릭하여 수동으로 실행할 수 있습니다.
+---
 
 ## 학교 급식 API 연동
 
@@ -122,11 +196,15 @@ GitHub Actions 탭에서 "학식 알림 봇" 워크플로우를 선택하고 "Ru
 - [나이스 교육정보 개방 포털](https://open.neis.go.kr/) - NEIS 급식 API
 - 기타 학교별 급식 API
 
+---
+
 ## 커스터마이징
 
 ### 메뉴 포맷 변경
 
 `menu_fetcher.py`의 `format_menu_message` 메서드를 수정하여 메시지 형식을 변경할 수 있습니다.
+
+---
 
 ## 문제 해결
 
@@ -141,6 +219,17 @@ GitHub Actions 탭에서 "학식 알림 봇" 워크플로우를 선택하고 "Ru
 1. Chrome 브라우저가 설치되어 있는지 확인
 2. `SCHOOL_MENU_WEBSITE_URL`이 올바른지 확인
 3. 학교 홈페이지 구조가 변경되었는지 확인
+
+---
+
+## 보안 주의사항
+
+⚠️ **절대 코드에 직접 URL이나 토큰을 적지 마세요!**
+- `.env` 파일은 `.gitignore`에 포함되어 있어 Git에 올라가지 않습니다.
+- 모든 민감한 정보는 GitHub Secrets에 저장하세요.
+- Secrets는 암호화되어 저장되며, 워크플로우 실행 시에만 사용됩니다.
+
+---
 
 ## 라이선스
 
