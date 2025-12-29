@@ -9,9 +9,21 @@ from config import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
 
 # 필수 토큰 검증
 if not SLACK_BOT_TOKEN:
-    raise ValueError("SLACK_BOT_TOKEN environment variable is required for bot mode")
+    error_msg = (
+        "❌ SLACK_BOT_TOKEN environment variable is required for bot mode\n"
+        "💡 해결 방법:\n"
+        "   1. GitHub Secrets에 SLACK_BOT_TOKEN을 추가하세요\n"
+        "   2. 또는 로컬에서 .env 파일에 SLACK_BOT_TOKEN=xoxb-... 추가하세요"
+    )
+    raise ValueError(error_msg)
 if not SLACK_APP_TOKEN:
-    raise ValueError("SLACK_APP_TOKEN environment variable is required for bot mode")
+    error_msg = (
+        "❌ SLACK_APP_TOKEN environment variable is required for bot mode\n"
+        "💡 해결 방법:\n"
+        "   1. GitHub Secrets에 SLACK_APP_TOKEN을 추가하세요\n"
+        "   2. 또는 로컬에서 .env 파일에 SLACK_APP_TOKEN=xapp-... 추가하세요"
+    )
+    raise ValueError(error_msg)
 
 # Slack 앱 초기화
 app = App(token=SLACK_BOT_TOKEN)
