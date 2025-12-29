@@ -3,9 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Slack Configuration
-SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
-SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN")
+# Slack Configuration (봇 모드 제거됨 - 자동 전송만 사용)
+# SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
+# SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN")
 
 # School Menu Configuration
 SCHOOL_MENU_API_URL = os.getenv("SCHOOL_MENU_API_URL", "")
