@@ -112,6 +112,13 @@ class MenuFetcher:
             chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920,1080')
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--disable-software-rasterizer')
+            chrome_options.add_argument('--disable-web-security')
+            chrome_options.add_argument('--ignore-certificate-errors')
+            chrome_options.add_argument('--ignore-ssl-errors')
+            chrome_options.add_argument('--ignore-certificate-errors-spki-list')
             chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
             
             # 2. ChromeDriver 자동 설치 및 설정
@@ -132,6 +139,9 @@ class MenuFetcher:
                     service = Service(ChromeDriverManager().install())
                     driver = webdriver.Chrome(service=service, options=chrome_options)
                     print("✅ ChromeDriver 설정 완료 (로컬 환경)")
+                
+                # 페이지 로드 타임아웃 설정 (드라이버 생성 후)
+                driver.set_page_load_timeout(60)  # 60초
             except Exception as e:
                 error_msg = f"❌ Chrome/ChromeDriver 설정 실패: {e}"
                 print(error_msg)
@@ -146,18 +156,38 @@ class MenuFetcher:
             print(f"🌐 페이지 접속 중: {self.website_url}")
             driver.get(self.website_url)
             
-            # 페이지 로딩 기다리기 (넉넉하게 3초)
+            # 페이지 로딩 기다리기 (넉넉하게 5초)
             print("⏳ 페이지 로딩 대기 중...")
+            time.sleep(5)
+            
+            # AngularJS가 메뉴를 로드할 때까지 대기 (최대 30초로 증가)
+            wait = WebDriverWait(driver, 30)
+            
+            # 메뉴 컨테이너가 로드될 때까지 대기 (여러 선택자 시도)
+            print("🔍 메뉴 컨테이너 찾는 중...")
+            try:
+                # 먼저 일반적인 컨테이너 요소들을 찾아봄
+                wait.until(EC.presence_of_element_located((By.CLASS_NAME, "nb-p-04-content")))
+                print("✅ 메뉴 컨테이너 발견")
+            except TimeoutException:
+                # 대체 선택자 시도
+                print("⚠️  기본 컨테이너를 찾지 못함. 대체 방법 시도 중...")
+                try:
+                    # body가 로드되었는지 확인
+                    wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                    # 추가 대기 시간
+                    time.sleep(5)
+                    # 페이지가 완전히 로드되었는지 확인
+                    page_state = driver.execute_script("return document.readyState")
+                    print(f"📄 페이지 상태: {page_state}")
+                    if page_state != "complete":
+                        print("⏳ 페이지 완전 로드 대기 중...")
+                        time.sleep(5)
+                except TimeoutException:
+                    raise TimeoutException("페이지가 로드되지 않았습니다.")
+            
+            # 추가로 JavaScript 실행 완료 대기 (3초로 증가)
             time.sleep(3)
-            
-            # AngularJS가 메뉴를 로드할 때까지 대기 (최대 10초)
-            wait = WebDriverWait(driver, 10)
-            
-            # 메뉴 컨테이너가 로드될 때까지 대기
-            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "nb-p-04-content")))
-            
-            # 추가로 JavaScript 실행 완료 대기 (2초)
-            time.sleep(2)
             
             # 페이지 소스 가져오기
             html = driver.page_source
@@ -282,15 +312,18 @@ class MenuFetcher:
             # 예: class가 'lunch'인 경우 -> By.CSS_SELECTOR, ".lunch"
             # 예: 텍스트가 '중식'인 경우 -> By.XPATH, "//em[contains(text(), '중식')]"
             
+            # 탭 클릭용 대기 시간 (20초로 설정)
+            tab_wait = WebDriverWait(driver, 20)
+            
             try:
                 # 조식 탭 클릭
                 print("🔘 조식 탭 클릭 중...")
                 # XPath를 사용하여 '조식' 텍스트가 포함된 em 태그 찾기
-                breakfast_tab = wait.until(EC.presence_of_element_located((By.XPATH, "//em[contains(text(), '조식')]")))
+                breakfast_tab = tab_wait.until(EC.element_to_be_clickable((By.XPATH, "//em[contains(text(), '조식')]")))
                 if breakfast_tab:
                     # JavaScript로 클릭 (더 안정적)
                     driver.execute_script("arguments[0].click();", breakfast_tab)
-                    time.sleep(1.5)  # 메뉴 로딩 대기
+                    time.sleep(2)  # 메뉴 로딩 대기 (1.5초 -> 2초)
                     breakfast_menu = extract_menu_from_tab()
                     total_courses = sum(len(courses) for courses in breakfast_menu.values())
                     print(f"✅ 조식 메뉴: {len(breakfast_menu)}개 식당, {total_courses}개 코스")
@@ -302,11 +335,11 @@ class MenuFetcher:
                 # 중식 탭 클릭
                 print("🔘 중식 탭 클릭 중...")
                 # XPath를 사용하여 '중식' 텍스트가 포함된 em 태그 찾기
-                lunch_tab = wait.until(EC.presence_of_element_located((By.XPATH, "//em[contains(text(), '중식')]")))
+                lunch_tab = tab_wait.until(EC.element_to_be_clickable((By.XPATH, "//em[contains(text(), '중식')]")))
                 if lunch_tab:
                     # JavaScript로 클릭 (더 안정적)
                     driver.execute_script("arguments[0].click();", lunch_tab)
-                    time.sleep(1.5)  # 메뉴 로딩 대기
+                    time.sleep(2)  # 메뉴 로딩 대기 (1.5초 -> 2초)
                     lunch_menu = extract_menu_from_tab()
                     total_courses = sum(len(courses) for courses in lunch_menu.values())
                     print(f"✅ 중식 메뉴: {len(lunch_menu)}개 식당, {total_courses}개 코스")
@@ -318,11 +351,11 @@ class MenuFetcher:
                 # 석식 탭 클릭
                 print("🔘 석식 탭 클릭 중...")
                 # XPath를 사용하여 '석식' 텍스트가 포함된 em 태그 찾기
-                dinner_tab = wait.until(EC.presence_of_element_located((By.XPATH, "//em[contains(text(), '석식')]")))
+                dinner_tab = tab_wait.until(EC.element_to_be_clickable((By.XPATH, "//em[contains(text(), '석식')]")))
                 if dinner_tab:
                     # JavaScript로 클릭 (더 안정적)
                     driver.execute_script("arguments[0].click();", dinner_tab)
-                    time.sleep(1.5)  # 메뉴 로딩 대기
+                    time.sleep(2)  # 메뉴 로딩 대기 (1.5초 -> 2초)
                     dinner_menu = extract_menu_from_tab()
                     total_courses = sum(len(courses) for courses in dinner_menu.values())
                     print(f"✅ 석식 메뉴: {len(dinner_menu)}개 식당, {total_courses}개 코스")
