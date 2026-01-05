@@ -17,6 +17,20 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 from config import SCHOOL_MENU_API_URL, SCHOOL_CODE, SCHOOL_MENU_WEBSITE_URL, SELENIUM_HEADLESS
 
+# 한국 시간대 설정 (UTC+9)
+try:
+    from zoneinfo import ZoneInfo
+    KST = ZoneInfo("Asia/Seoul")
+except ImportError:
+    # Python 3.8 이하에서는 pytz 사용
+    try:
+        import pytz
+        KST = pytz.timezone("Asia/Seoul")
+    except ImportError:
+        # pytz도 없으면 UTC+9로 수동 계산
+        from datetime import timezone, timedelta
+        KST = timezone(timedelta(hours=9))
+
 
 class MenuFetcher:
     """학교 급식 메뉴를 가져오는 클래스"""
@@ -29,6 +43,7 @@ class MenuFetcher:
     def get_today_menu(self) -> Dict[str, any]:
         """
         오늘의 급식 메뉴를 가져옵니다.
+        한국 시간대(KST) 기준으로 오늘 날짜를 계산합니다.
         
         Returns:
             Dict: 메뉴 정보를 담은 딕셔너리
@@ -39,7 +54,8 @@ class MenuFetcher:
                     'dinner': ['메뉴1', '메뉴2', ...]
                 }
         """
-        today = datetime.now()
+        # 한국 시간대(KST) 기준으로 현재 날짜/시간 가져오기
+        today = datetime.now(KST)
         return self.get_menu_by_date(today)
     
     def get_menu_by_date(self, date: datetime) -> Dict[str, any]:
